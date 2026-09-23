@@ -1,0 +1,123 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: academiax-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: academiax
+    ports:
+      - '3307:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  eureka-server:
+    build:
+      context: ./backend
+      dockerfile: eureka-server/Dockerfile
+    container_name: academiax-eureka
+    ports:
+      - '8761:8761'
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - mysql
+
+  auth-service:
+    build:
+      context: ./backend
+      dockerfile: auth-service/Dockerfile
+    container_name: academiax-auth
+    ports:
+      - '8081:8081'
+    environment:
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      DB_HOST: mysql
+      JWT_SECRET: academiax-secret-key-for-local-dev-change-me
+      EUREKA_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      - mysql
+      - eureka-server
+
+  course-service:
+    build:
+      context: ./backend
+      dockerfile: course-service/Dockerfile
+    container_name: academiax-course
+    ports:
+      - '8082:8082'
+    environment:
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      DB_HOST: mysql
+      JWT_SECRET: academiax-secret-key-for-local-dev-change-me
+      EUREKA_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      - mysql
+      - eureka-server
+
+  payment-service:
+    build:
+      context: ./backend
+      dockerfile: payment-service/Dockerfile
+    container_name: academiax-payment
+    ports:
+      - '8084:8084'
+    environment:
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      DB_HOST: mysql
+      JWT_SECRET: academiax-secret-key-for-local-dev-change-me
+      EUREKA_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      - mysql
+      - eureka-server
+
+  enrollment-service:
+    build:
+      context: ./backend
+      dockerfile: enrollment-service/Dockerfile
+    container_name: academiax-enrollment
+    ports:
+      - '8083:8083'
+    environment:
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      DB_HOST: mysql
+      JWT_SECRET: academiax-secret-key-for-local-dev-change-me
+      EUREKA_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      - mysql
+      - eureka-server
+      - course-service
+      - payment-service
+
+  api-gateway:
+    build:
+      context: ./backend
+      dockerfile: api-gateway/Dockerfile
+    container_name: academiax-gateway
+    ports:
+      - '8080:8080'
+    environment:
+      JWT_SECRET: academiax-secret-key-for-local-dev-change-me
+      EUREKA_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+      - auth-service
+      - course-service
+      - enrollment-service
+      - payment-service
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: academiax-frontend
+    ports:
+      - '5173:80'
+    depends_on:
+      - api-gateway
+
+volumes:
+  mysql_data:

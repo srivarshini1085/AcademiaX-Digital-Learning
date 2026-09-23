@@ -1,0 +1,71 @@
+{
+  "info": {
+    "name": "AcademiaX API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection for auth, course, enrollment, and payment APIs"
+  },
+  "item": [
+    {
+      "name": "Auth - Register student",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Student Demo\",\n  \"email\": \"student@academiax.com\",\n  \"password\": \"Student@123\",\n  \"role\": \"STUDENT\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"student@academiax.com\",\n  \"password\": \"Student@123\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "Course - Get all courses",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/courses"
+      }
+    },
+    {
+      "name": "Enrollment - Create enrollment",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": 1,\n  \"courseId\": 1\n}"
+        },
+        "url": "{{baseUrl}}/enrollments"
+      }
+    },
+    {
+      "name": "Payment - Create payment",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": 1,\n  \"courseId\": 1,\n  \"amount\": 149.00\n}"
+        },
+        "url": "{{baseUrl}}/payments"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ]
+}
