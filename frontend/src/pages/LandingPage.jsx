@@ -60,20 +60,6 @@ export default function LandingPage() {
               </Link>
               <Link to="/login" className="btn-secondary">View portal</Link>
             </div>
-            <div className="mt-10 flex gap-10 text-sm text-slate-600">
-              <div>
-                <div className="text-3xl font-black text-slate-900">12k+</div>
-                <div>Active learners</div>
-              </div>
-              <div>
-                <div className="text-3xl font-black text-slate-900">350+</div>
-                <div>Expert courses</div>
-              </div>
-              <div>
-                <div className="text-3xl font-black text-slate-900">94%</div>
-                <div>Completion rate</div>
-              </div>
-            </div>
           </div>
 
           <div className="card p-6">
