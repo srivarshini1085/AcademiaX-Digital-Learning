@@ -20,6 +20,8 @@ public class PaymentResponse {
     private BigDecimal amount;
     private PaymentStatus status;
     private String transactionRef;
+    private String failureReason;
+    private String cardLast4;
     private LocalDateTime paidAt;
     private LocalDateTime createdAt;
 }

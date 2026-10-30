@@ -36,6 +36,10 @@ public class Payment {
     @Column(nullable = false, unique = true)
     private String transactionRef;
 
+    private String failureReason;
+
+    private String cardLast4;
+
     private LocalDateTime paidAt;
 
     @Column(nullable = false)

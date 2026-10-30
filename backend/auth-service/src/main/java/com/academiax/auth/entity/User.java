@@ -36,5 +36,17 @@ public class User {
     private String department;
 
     @Column(nullable = false)
+    @Builder.Default
+    private Boolean active = true;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer failedLoginAttempts = 0;
+
+    private LocalDateTime lockoutUntil;
+
+    @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 }

@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -32,6 +33,13 @@ public class Course {
     private Long instructorId;
 
     @Column(nullable = false)
+    private String department;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private String level = "UNDERGRADUATE";
+
+    @Column(nullable = false)
     private Integer credits;
 
     @Column(nullable = false)
@@ -39,6 +47,10 @@ public class Course {
 
     @Column(nullable = false)
     private Integer availableSeats;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal tuitionFee = BigDecimal.valueOf(1500.00);
 
     @Column(nullable = false)
     private String semester;
@@ -48,6 +60,10 @@ public class Course {
 
     @Column(nullable = false)
     private LocalDateTime enrollmentDeadline;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean deleted = false;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

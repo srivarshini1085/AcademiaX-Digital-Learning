@@ -1,0 +1,34 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    { "type": "java", "name": "eureka-server", "request": "launch", "mainClass": "com.academiax.eurekaserver.EurekaServerApplication", "projectName": "eureka-server", "envFile": "${workspaceFolder}/.env" },
+    { "type": "java", "name": "auth-service", "request": "launch", "mainClass": "com.academiax.auth.AuthServiceApplication", "projectName": "auth-service", "envFile": "${workspaceFolder}/.env", "env": { "PORT": "8081" } },
+    { "type": "java", "name": "course-service@8082", "request": "launch", "mainClass": "com.academiax.course.CourseServiceApplication", "projectName": "course-service", "envFile": "${workspaceFolder}/.env", "env": { "PORT": "8082" } },
+    { "type": "java", "name": "course-service@8092", "request": "launch", "mainClass": "com.academiax.course.CourseServiceApplication", "projectName": "course-service", "envFile": "${workspaceFolder}/.env", "env": { "PORT": "8092", "SEED_DATA": "false" } },
+    { "type": "java", "name": "enrollment-service@8083", "request": "launch", "mainClass": "com.academiax.enrollment.EnrollmentServiceApplication", "projectName": "enrollment-service", "envFile": "${workspaceFolder}/.env", "env": { "PORT": "8083" } },
+    { "type": "java", "name": "enrollment-service@8093", "request": "launch", "mainClass": "com.academiax.enrollment.EnrollmentServiceApplication", "projectName": "enrollment-service", "envFile": "${workspaceFolder}/.env", "env": { "PORT": "8093", "SEED_DATA": "false" } },
+    { "type": "java", "name": "payment-service", "request": "launch", "mainClass": "com.academiax.payment.PaymentServiceApplication", "projectName": "payment-service", "envFile": "${workspaceFolder}/.env", "env": { "PORT": "8084" } },
+    { "type": "java", "name": "notification-service", "request": "launch", "mainClass": "com.academiax.notification.NotificationServiceApplication", "projectName": "notification-service", "envFile": "${workspaceFolder}/.env", "env": { "PORT": "8085" } },
+    { "type": "java", "name": "api-gateway", "request": "launch", "mainClass": "com.academiax.gateway.ApiGatewayApplication", "projectName": "api-gateway", "envFile": "${workspaceFolder}/.env", "env": { "PORT": "8080" } },
+    { "type": "node-terminal", "name": "frontend (vite)", "request": "launch", "command": "npm run dev", "cwd": "${workspaceFolder}/frontend" }
+  ],
+  "compounds": [
+    {
+      "name": "AcademiaX: whole backend",
+      "comment": "Start eureka-server on its own first and wait ~15 s, then launch this compound. Services retry Eureka registration, so order inside the compound does not matter.",
+      "configurations": [
+        "auth-service", "course-service@8082", "course-service@8092", "notification-service",
+        "payment-service", "enrollment-service@8083", "enrollment-service@8093", "api-gateway"
+      ],
+      "stopAll": true
+    },
+    {
+      "name": "AcademiaX: everything",
+      "configurations": [
+        "eureka-server", "auth-service", "course-service@8082", "course-service@8092", "notification-service",
+        "payment-service", "enrollment-service@8083", "enrollment-service@8093", "api-gateway", "frontend (vite)"
+      ],
+      "stopAll": true
+    }
+  ]
+}

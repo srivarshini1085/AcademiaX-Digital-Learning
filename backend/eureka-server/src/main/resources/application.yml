@@ -13,3 +13,12 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
   server:
     enable-self-preservation: false
+    # Demo tuning: evict dead instances within seconds and refresh the read cache quickly
+    eviction-interval-timer-in-ms: 5000
+    response-cache-update-interval-ms: 3000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

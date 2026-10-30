@@ -1,115 +1,87 @@
 import { Link } from 'react-router-dom';
-import { FaArrowRight, FaBookOpen, FaChartLine, FaShieldAlt } from 'react-icons/fa';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowRight } from 'lucide-react';
+import { courseApi } from '../lib/api';
+import { useInstructors } from '../lib/hooks';
+import { useAuth, homeFor } from '../context/AuthContext';
+import IndexCard from '../components/IndexCard';
+import { Skeleton } from '../components/ui';
+import { isPast } from '../lib/format';
 
-const featureCards = [
-  {
-    icon: <FaBookOpen className="text-2xl text-brand-600" />,
-    title: 'Expert-led Learning',
-    text: 'Explore practical courses, bootcamps, and career tracks designed for modern learners.',
-  },
-  {
-    icon: <FaChartLine className="text-2xl text-brand-600" />,
-    title: 'Progress Tracking',
-    text: 'Follow learning milestones, assignments, and completion rates in a single dashboard.',
-  },
-  {
-    icon: <FaShieldAlt className="text-2xl text-brand-600" />,
-    title: 'Secure Access',
-    text: 'Protected authentication and role-based access for every student, instructor, and admin.',
-  },
+const STEPS = [
+  ['I.', 'Hold a seat', 'Choose a course and the registrar sets one seat aside for you for ten minutes. Nobody else can take it.'],
+  ['II.', 'Pay tuition', 'Settle the fee with a card. A double click is safe: each payment carries an idempotency key.'],
+  ['III.', 'Confirmed', 'Your seat is yours for the term. If payment fails or time runs out, the seat goes to the next student on the waitlist.'],
 ];
 
 export default function LandingPage() {
+  const { user } = useAuth();
+  const instructors = useInstructors();
+  const catalogue = useQuery({
+    queryKey: ['courses', 'landing'],
+    queryFn: async () => (await courseApi.list({ size: 100, sort: 'enrollmentDeadline,asc' })).data,
+  });
+
+  const courses = catalogue.data?.content || [];
+  const open = courses.filter(c => !isPast(c.enrollmentDeadline));
+  const seatsOpen = open.reduce((sum, c) => sum + c.availableSeats, 0);
+  const departments = new Set(courses.map(c => c.department)).size;
+  const closingSoon = open.filter(c => c.availableSeats > 0).slice(0, 3);
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-600 text-lg font-bold text-white">A</div>
-          <div>
-            <div className="text-xl font-bold text-slate-900">AcademiaX</div>
-            <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Digital Learning</div>
+    <div className="space-y-16">
+      <section className="grid gap-10 pt-2 lg:grid-cols-[1.4fr_1fr] lg:items-end animate-fade">
+        <div>
+          <p className="eyebrow mb-4">Fall term 2026 · Course catalogue</p>
+          <h1 className="text-[2.6rem] font-normal leading-[1.05] sm:text-6xl">
+            Enroll in a seat that is <em className="text-accent">actually yours</em>.
+          </h1>
+          <p className="mt-5 max-w-xl text-base text-ink-soft">
+            AcademiaX is the registrar's enrollment desk: browse the catalogue, hold a seat, settle tuition, and see your place
+            confirmed. Seats are allocated atomically, so the course you paid for can never be oversold.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link to="/courses" className="btn-primary">Browse the catalogue <ArrowRight size={15} /></Link>
+            {user ? <Link to={homeFor(user.role)} className="btn-secondary">Go to your desk</Link>
+              : <Link to="/register" className="btn-secondary">Create a student account</Link>}
           </div>
         </div>
 
-        <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-          <a href="#features">Features</a>
-          <a href="#about">About</a>
-          <a href="#pricing">Pricing</a>
-        </nav>
-
-        <div className="flex items-center gap-3">
-          <Link to="/login" className="btn-secondary">Login</Link>
-          <Link to="/register" className="btn-primary">Get Started</Link>
-        </div>
-      </header>
-
-      <main>
-        <section className="mx-auto grid max-w-7xl gap-10 px-6 pb-16 pt-12 md:grid-cols-2 md:items-center">
-          <div>
-            <span className="badge bg-brand-50 text-brand-700">Built for online learning</span>
-            <h1 className="mt-6 text-5xl font-black leading-tight text-slate-900">
-              Learn faster. Grow smarter.
-            </h1>
-            <p className="mt-5 max-w-xl text-lg text-slate-600">
-              AcademiaX helps students discover high-impact programs, instructors manage premium courses,
-              and teams track outcomes from one modern learning platform.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link to="/register" className="btn-primary gap-2">
-                Start learning <FaArrowRight />
-              </Link>
-              <Link to="/login" className="btn-secondary">View portal</Link>
-            </div>
-          </div>
-
-          <div className="card p-6">
-            <div className="rounded-2xl bg-slate-900 p-5 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.3em] text-slate-400">Enrollment</div>
-                  <div className="mt-2 text-3xl font-bold">$24,500</div>
-                </div>
-                <div className="rounded-full bg-emerald-500/20 px-3 py-1 text-sm font-semibold text-emerald-300">
-                  +18.4%
-                </div>
-              </div>
-              <div className="mt-8 space-y-4">
-                {[
-                  ['Data Strategy', '92%'],
-                  ['AI for Product', '76%'],
-                  ['UX Design Sprint', '88%'],
-                ].map(([name, value]) => (
-                  <div key={name}>
-                    <div className="mb-1 flex justify-between text-sm text-slate-300">
-                      <span>{name}</span>
-                      <span>{value}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-slate-700">
-                      <div className="h-2 rounded-full bg-brand-500" style={{ width: value }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="features" className="mx-auto max-w-7xl px-6 py-20">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-700">Platform features</p>
-            <h2 className="mt-3 text-3xl font-bold text-slate-900">Everything you need to deliver online learning</h2>
-          </div>
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {featureCards.map(({ icon, title, text }) => (
-              <div key={title} className="card p-6">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50">{icon}</div>
-                <h3 className="text-xl font-bold text-slate-900">{title}</h3>
-                <p className="mt-3 text-slate-600">{text}</p>
+        <aside className="card p-6">
+          <p className="eyebrow">This term, at a glance</p>
+          <dl className="mt-4 divide-y divide-rule">
+            {[['Courses offered', courses.length], ['Seats still open', seatsOpen], ['Departments', departments]].map(([label, value]) => (
+              <div key={label} className="flex items-baseline justify-between py-3">
+                <dt className="text-sm text-ink-soft">{label}</dt>
+                <dd className="font-display text-3xl tabular-nums">{catalogue.isLoading ? <Skeleton className="h-7 w-12" /> : value}</dd>
               </div>
             ))}
+          </dl>
+          <p className="mt-2 font-mono text-[10.5px] text-ink-muted">Live from the course service</p>
+        </aside>
+      </section>
+
+      <section>
+        <div className="mb-6 flex items-end justify-between border-b border-ink/80 pb-3">
+          <h2 className="text-2xl">Closing soon</h2>
+          <Link to="/courses" className="text-sm text-accent hover:underline">Full catalogue →</Link>
+        </div>
+        {catalogue.isLoading ? <div className="grid gap-4 md:grid-cols-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-60" />)}</div> : (
+          <div className="grid gap-4 md:grid-cols-3">
+            {closingSoon.map(c => <IndexCard key={c.id} course={c} instructor={instructors.data?.get(c.instructorId)} />)}
           </div>
-        </section>
-      </main>
+        )}
+      </section>
+
+      <section className="grid gap-8 border-t border-ink/80 pt-8 md:grid-cols-3">
+        {STEPS.map(([numeral, title, body]) => (
+          <div key={title}>
+            <p className="font-display text-3xl italic text-accent">{numeral}</p>
+            <h3 className="mt-2 text-xl">{title}</h3>
+            <p className="mt-2 text-sm text-ink-soft">{body}</p>
+          </div>
+        ))}
+      </section>
     </div>
   );
 }

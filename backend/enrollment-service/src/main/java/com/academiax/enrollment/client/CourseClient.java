@@ -4,6 +4,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Map;
 
@@ -12,6 +13,9 @@ public interface CourseClient {
 
     @GetMapping("/courses/{id}")
     Map<String, Object> getCourse(@PathVariable("id") Long id);
+
+    @GetMapping("/courses")
+    Map<String, Object> searchByCode(@RequestParam("courseCode") String courseCode);
 
     @PutMapping("/courses/{id}/reserve-seat")
     Map<String, Object> reserveSeat(@PathVariable("id") Long id);

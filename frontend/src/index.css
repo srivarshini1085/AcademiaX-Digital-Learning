@@ -2,49 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
+/* "University Registrar, editorial": a printed course catalogue, not a SaaS dashboard.
+   Tokens are RGB channels so Tailwind's opacity modifiers work (bg-accent/10). */
 :root {
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #0f172a;
-  background: #f8fafc;
-  line-height: 1.5;
-  font-weight: 400;
+  --paper: 246 242 234;        /* #F6F2EA warm paper */
+  --surface: 252 250 245;      /* card stock */
+  --sunken: 238 232 220;       /* inset wells, table heads */
+  --ink: 28 27 25;             /* #1C1B19 */
+  --ink-soft: 72 69 64;
+  --ink-muted: 107 102 94;     /* AA on paper and surface */
+  --rule: 217 210 195;         /* #D9D2C3 hairline */
+  --accent: 122 31 43;         /* #7A1F2B oxblood, used sparingly */
+  --accent-strong: 94 22 32;
+  --accent-wash: 244 228 226;
+  --on-accent: 255 250 245;
+  --good: 31 94 64;
+  --warn: 138 88 10;
+  --bad: 160 32 40;
+  color-scheme: light;
 }
 
-html {
-  scroll-behavior: smooth;
+.dark {
+  --paper: 24 23 21;           /* deep charcoal */
+  --surface: 33 32 29;
+  --sunken: 19 18 17;
+  --ink: 236 231 221;
+  --ink-soft: 200 194 183;
+  --ink-muted: 156 150 140;
+  --rule: 62 59 53;
+  --accent: 214 108 120;       /* the same oxblood, lifted for contrast on charcoal */
+  --accent-strong: 232 140 150;
+  --accent-wash: 58 32 35;
+  --on-accent: 24 23 21;
+  --good: 122 196 156;
+  --warn: 226 178 92;
+  --bad: 236 120 120;
+  color-scheme: dark;
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background: linear-gradient(180deg, #f8fafc 0%, #edf6ff 100%);
+@layer base {
+  html { @apply bg-paper text-ink font-sans antialiased; }
+  body { @apply bg-paper min-h-screen; font-feature-settings: 'cv11', 'ss01'; }
+  h1, h2, h3 { @apply font-display text-ink; font-optical-sizing: auto; letter-spacing: -0.01em; }
+  ::selection { @apply bg-accent/20; }
+  :focus-visible { @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-paper; }
+  * { @apply border-rule; }
 }
 
-* {
-  box-sizing: border-box;
+@layer components {
+  .container-page { @apply mx-auto w-full max-w-6xl px-4 sm:px-6; }
+
+  /* Small-caps label used above headings, like a catalogue section marker */
+  .eyebrow { @apply font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted; }
+
+  .card { @apply bg-surface border border-rule rounded-card; }
+  .rule-dashed { @apply border-t border-dashed border-rule; }
+
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-card px-4 py-2 text-sm font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn bg-accent text-accent-on hover:bg-accent-strong; }
+  .btn-secondary { @apply btn border border-ink/80 text-ink hover:bg-ink hover:text-paper; }
+  .btn-quiet { @apply btn text-ink-soft hover:bg-sunken hover:text-ink; }
+  .btn-danger { @apply btn border border-bad/60 text-bad hover:bg-bad hover:text-paper; }
+  .btn-sm { @apply px-2.5 py-1 text-xs; }
+
+  .field-label { @apply mb-1 block text-xs font-medium text-ink-soft; }
+  .field-input { @apply w-full rounded-card border border-rule bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-muted/70 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent; }
+  .field-error { @apply mt-1 text-xs text-bad; }
+
+  .table-ledger { @apply w-full text-left text-sm; }
+  .table-ledger thead th { @apply border-b border-ink/70 pb-2 pr-3 pt-1 font-mono text-[11px] font-normal uppercase tracking-[0.14em] text-ink-muted; }
+  .table-ledger tbody td { @apply border-b border-rule py-2.5 pr-3 align-top; }
+
+  .skeleton { @apply rounded-card bg-sunken; background-image: linear-gradient(90deg, transparent 0, rgb(var(--surface) / 0.7) 50%, transparent 100%); background-size: 400px 100%; background-repeat: no-repeat; @apply animate-shimmer; }
 }
 
-#root {
-  min-height: 100vh;
-}
-
-.card {
-  @apply bg-white rounded-2xl shadow-soft border border-slate-200;
-}
-
-.btn-primary {
-  @apply inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 font-medium text-white transition hover:bg-brand-700;
-}
-
-.btn-secondary {
-  @apply inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-medium text-slate-700 transition hover:bg-slate-50;
-}
-
-.input-field {
-  @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
-}
-
-.badge {
-  @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }

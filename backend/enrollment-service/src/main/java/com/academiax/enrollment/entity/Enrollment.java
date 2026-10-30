@@ -6,10 +6,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "enrollments")
+@Table(name = "enrollments", indexes = {
+        @Index(name = "idx_enrollment_student_course", columnList = "studentId, courseId"),
+        @Index(name = "idx_enrollment_status", columnList = "status"),
+        @Index(name = "idx_enrollment_hold_expires", columnList = "holdExpiresAt")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -29,6 +34,22 @@ public class Enrollment {
     @Column(nullable = false)
     private EnrollmentStatus status;
 
+    private LocalDateTime holdExpiresAt;
+
+    private Long paymentId;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal tuitionFee;
+
+    private Integer waitlistPosition;
+
+    private String cancellationReason;
+
     @Column(nullable = false)
     private LocalDateTime enrolledAt;
+
+    private LocalDateTime updatedAt;
+
+    @Version
+    private Long version;
 }

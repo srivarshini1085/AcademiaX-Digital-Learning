@@ -1,123 +1,206 @@
+# AcademiaX: full stack. All values come from .env (copy .env.example to .env first).
+#   docker compose up --build
+# Two instances each of course-service and enrollment-service run on their own ports, so every
+# response's X-Served-By header (course-service@8082 vs course-service@8092) proves load balancing.
+
+x-service-env: &service-env
+  DB_HOST: mysql
+  DB_USERNAME: ${DB_USERNAME}
+  DB_PASSWORD: ${DB_PASSWORD}
+  JWT_SECRET: ${JWT_SECRET}
+  EUREKA_URL: http://eureka-server:8761/eureka/
+
+x-healthcheck: &actuator-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 12
+  start_period: 40s
+
+x-after-infra: &after-infra
+  mysql:
+    condition: service_healthy
+  eureka-server:
+    condition: service_healthy
+
 services:
   mysql:
     image: mysql:8.0
-    container_name: academiax-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: academiax
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
     ports:
-      - '3307:3306'
+      # Host port only for inspecting the DB from Windows; services use mysql:3306 inside the network.
+      - '${MYSQL_HOST_PORT:-3307}:3306'
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   eureka-server:
     build:
       context: ./backend
       dockerfile: eureka-server/Dockerfile
-    container_name: academiax-eureka
     ports:
       - '8761:8761'
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-    depends_on:
-      - mysql
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8761/actuator/health || exit 1"]
+      <<: *actuator-healthcheck
 
   auth-service:
     build:
       context: ./backend
       dockerfile: auth-service/Dockerfile
-    container_name: academiax-auth
     ports:
       - '8081:8081'
     environment:
-      DB_USERNAME: root
-      DB_PASSWORD: root
-      DB_HOST: mysql
-      JWT_SECRET: academiax-secret-key-for-local-dev-change-me
-      EUREKA_URL: http://eureka-server:8761/eureka/
-    depends_on:
-      - mysql
-      - eureka-server
+      <<: *service-env
+      PORT: 8081
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_NAME: ${ADMIN_NAME}
+    depends_on: *after-infra
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8081/actuator/health || exit 1"]
+      <<: *actuator-healthcheck
 
-  course-service:
+  course-service-1:
     build:
       context: ./backend
       dockerfile: course-service/Dockerfile
-    container_name: academiax-course
     ports:
       - '8082:8082'
     environment:
-      DB_USERNAME: root
-      DB_PASSWORD: root
-      DB_HOST: mysql
-      JWT_SECRET: academiax-secret-key-for-local-dev-change-me
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      <<: *service-env
+      PORT: 8082
+    depends_on: *after-infra
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8082/actuator/health || exit 1"]
+      <<: *actuator-healthcheck
+
+  course-service-2:
+    build:
+      context: ./backend
+      dockerfile: course-service/Dockerfile
+    ports:
+      - '8092:8092'
+    environment:
+      <<: *service-env
+      PORT: 8092
+      # Only one instance seeds demo data; both share the same MySQL schema.
+      SEED_DATA: 'false'
     depends_on:
-      - mysql
-      - eureka-server
+      <<: *after-infra
+      course-service-1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8092/actuator/health || exit 1"]
+      <<: *actuator-healthcheck
 
   payment-service:
     build:
       context: ./backend
       dockerfile: payment-service/Dockerfile
-    container_name: academiax-payment
     ports:
       - '8084:8084'
     environment:
-      DB_USERNAME: root
-      DB_PASSWORD: root
-      DB_HOST: mysql
-      JWT_SECRET: academiax-secret-key-for-local-dev-change-me
-      EUREKA_URL: http://eureka-server:8761/eureka/
-    depends_on:
-      - mysql
-      - eureka-server
+      <<: *service-env
+      PORT: 8084
+    depends_on: *after-infra
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8084/actuator/health || exit 1"]
+      <<: *actuator-healthcheck
 
-  enrollment-service:
+  notification-service:
+    build:
+      context: ./backend
+      dockerfile: notification-service/Dockerfile
+    ports:
+      - '8085:8085'
+    environment:
+      <<: *service-env
+      PORT: 8085
+    depends_on: *after-infra
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8085/actuator/health || exit 1"]
+      <<: *actuator-healthcheck
+
+  enrollment-service-1:
     build:
       context: ./backend
       dockerfile: enrollment-service/Dockerfile
-    container_name: academiax-enrollment
     ports:
       - '8083:8083'
     environment:
-      DB_USERNAME: root
-      DB_PASSWORD: root
-      DB_HOST: mysql
-      JWT_SECRET: academiax-secret-key-for-local-dev-change-me
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      <<: *service-env
+      PORT: 8083
     depends_on:
-      - mysql
-      - eureka-server
-      - course-service
-      - payment-service
+      <<: *after-infra
+      course-service-1:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8083/actuator/health || exit 1"]
+      <<: *actuator-healthcheck
+
+  enrollment-service-2:
+    build:
+      context: ./backend
+      dockerfile: enrollment-service/Dockerfile
+    ports:
+      - '8093:8093'
+    environment:
+      <<: *service-env
+      PORT: 8093
+      SEED_DATA: 'false'
+    depends_on:
+      <<: *after-infra
+      enrollment-service-1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8093/actuator/health || exit 1"]
+      <<: *actuator-healthcheck
 
   api-gateway:
     build:
       context: ./backend
       dockerfile: api-gateway/Dockerfile
-    container_name: academiax-gateway
     ports:
       - '8080:8080'
     environment:
-      JWT_SECRET: academiax-secret-key-for-local-dev-change-me
+      JWT_SECRET: ${JWT_SECRET}
       EUREKA_URL: http://eureka-server:8761/eureka/
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
     depends_on:
-      - eureka-server
-      - auth-service
-      - course-service
-      - enrollment-service
-      - payment-service
+      eureka-server:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      course-service-1:
+        condition: service_healthy
+      enrollment-service-1:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8080/actuator/health || exit 1"]
+      <<: *actuator-healthcheck
 
   frontend:
     build:
       context: ./frontend
-    container_name: academiax-frontend
+      args:
+        VITE_API_URL: http://localhost:8080
     ports:
       - '5173:80'
     depends_on:
-      - api-gateway
+      api-gateway:
+        condition: service_healthy
 
 volumes:
   mysql_data:

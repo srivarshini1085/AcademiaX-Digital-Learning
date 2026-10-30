@@ -1,46 +1,64 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { useAuth, homeFor } from './context/AuthContext';
+import Layout from './components/Layout';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import StudentDashboard from './pages/StudentDashboard';
-import InstructorDashboard from './pages/InstructorDashboard';
-import AdminDashboard from './pages/AdminDashboard';
+import CataloguePage from './pages/CataloguePage';
+import CourseDetailPage from './pages/CourseDetailPage';
+import CheckoutPage from './pages/CheckoutPage';
 import MyEnrollmentsPage from './pages/MyEnrollmentsPage';
-import PaymentPage from './pages/PaymentPage';
-import CreateCoursePage from './pages/CreateCoursePage';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import StudentDashboard from './pages/StudentDashboard';
+const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard'));
+import CourseEditorPage from './pages/CourseEditorPage';
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const SystemConsolePage = lazy(() => import('./pages/SystemConsolePage')); // staff pages load recharts on demand
+import NotificationsPage from './pages/NotificationsPage';
+import ProfilePage from './pages/ProfilePage';
+import { ForbiddenPage, NotFoundPage } from './pages/StatusPages';
+import { Skeleton } from './components/ui';
 
-function AppRoutes() {
-  const { isAuthenticated, user } = useAuth();
+/** Client-side guard for navigation only; every rule is enforced again by the gateway and the services. */
+function RequireRole({ roles, children }) {
+  const { user } = useAuth();
+  const location = useLocation();
+  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  if (roles && !roles.includes(user.role)) return <ForbiddenPage />;
+  return <Suspense fallback={<Skeleton className="h-96" />}>{children}</Suspense>;
+}
 
-  const roleRedirect = () => {
-    if (!isAuthenticated || !user) return '/login';
-    if (user.role === 'STUDENT') return '/student/dashboard';
-    if (user.role === 'INSTRUCTOR') return '/instructor/dashboard';
-    if (user.role === 'ADMIN') return '/admin/dashboard';
-    return '/';
-  };
-
-  return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={isAuthenticated ? <Navigate to={roleRedirect()} replace /> : <LoginPage />} />
-      <Route path="/register" element={isAuthenticated ? <Navigate to={roleRedirect()} replace /> : <RegisterPage />} />
-      <Route path="/student/dashboard" element={isAuthenticated && user?.role === 'STUDENT' ? <StudentDashboard /> : <Navigate to="/login" replace />} />
-      <Route path="/student/enrollments" element={isAuthenticated && user?.role === 'STUDENT' ? <MyEnrollmentsPage /> : <Navigate to="/login" replace />} />
-      <Route path="/student/payment/:paymentId" element={isAuthenticated && user?.role === 'STUDENT' ? <PaymentPage /> : <Navigate to="/login" replace />} />
-      <Route path="/instructor/dashboard" element={isAuthenticated && user?.role === 'INSTRUCTOR' ? <InstructorDashboard /> : <Navigate to="/login" replace />} />
-      <Route path="/instructor/courses/create" element={isAuthenticated && user?.role === 'INSTRUCTOR' ? <CreateCoursePage /> : <Navigate to="/login" replace />} />
-      <Route path="/admin/dashboard" element={isAuthenticated && user?.role === 'ADMIN' ? <AdminDashboard /> : <Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
+function GuestOnly({ children }) {
+  const { user } = useAuth();
+  return user ? <Navigate to={homeFor(user.role)} replace /> : children;
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<LandingPage />} />
+        <Route path="login" element={<GuestOnly><LoginPage /></GuestOnly>} />
+        <Route path="register" element={<GuestOnly><RegisterPage /></GuestOnly>} />
+        <Route path="courses" element={<CataloguePage />} />
+        <Route path="courses/new" element={<RequireRole roles={['ADMIN', 'INSTRUCTOR']}><CourseEditorPage /></RequireRole>} />
+        <Route path="courses/:id" element={<CourseDetailPage />} />
+        <Route path="courses/:id/edit" element={<RequireRole roles={['ADMIN', 'INSTRUCTOR']}><CourseEditorPage /></RequireRole>} />
+
+        <Route path="dashboard" element={<RequireRole roles={['STUDENT']}><StudentDashboard /></RequireRole>} />
+        <Route path="enrollments" element={<RequireRole roles={['STUDENT']}><MyEnrollmentsPage /></RequireRole>} />
+        <Route path="checkout/:enrollmentId" element={<RequireRole roles={['STUDENT']}><CheckoutPage /></RequireRole>} />
+
+        <Route path="instructor" element={<RequireRole roles={['INSTRUCTOR']}><InstructorDashboard /></RequireRole>} />
+
+        <Route path="admin" element={<RequireRole roles={['ADMIN']}><AdminDashboard /></RequireRole>} />
+        <Route path="admin/console" element={<RequireRole roles={['ADMIN']}><SystemConsolePage /></RequireRole>} />
+
+        <Route path="notifications" element={<RequireRole><NotificationsPage /></RequireRole>} />
+        <Route path="profile" element={<RequireRole><ProfilePage /></RequireRole>} />
+        <Route path="403" element={<ForbiddenPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+    </Routes>
   );
 }

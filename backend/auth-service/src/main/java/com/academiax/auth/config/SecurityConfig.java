@@ -29,9 +29,16 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/register", "/auth/login", "/auth/refresh", "/swagger-ui/**", "/v3/api-docs/**")
-                .permitAll()
-                .anyRequest().authenticated())
+                .requestMatchers(
+                    "/auth/register",
+                    "/auth/login",
+                    "/auth/refresh",
+                    "/auth/logout",
+                    "/actuator/**",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**"
+                ).permitAll()
+                .anyRequest().permitAll()) // Gateway handles perimeter auth; service trusts gateway-injected headers or JWT
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -39,7 +46,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean

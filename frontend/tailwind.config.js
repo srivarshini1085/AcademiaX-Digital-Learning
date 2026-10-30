@@ -1,22 +1,38 @@
 /** @type {import('tailwindcss').Config} */
+// Every colour is a CSS variable (see src/index.css), so light and dark mode share one set of class names.
+const token = name => `rgb(var(--${name}) / <alpha-value>)`;
+
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: '#eef7ff',
-          100: '#dbeeff',
-          500: '#2f6fed',
-          600: '#1f5bd8',
-          700: '#1a4db0',
-        },
-        accent: '#e7f7ed',
+        paper: token('paper'),
+        surface: token('surface'),
+        sunken: token('sunken'),
+        ink: { DEFAULT: token('ink'), soft: token('ink-soft'), muted: token('ink-muted') },
+        rule: token('rule'),
+        accent: { DEFAULT: token('accent'), strong: token('accent-strong'), wash: token('accent-wash'), on: token('on-accent') },
+        good: token('good'),
+        warn: token('warn'),
+        bad: token('bad'),
       },
-      boxShadow: {
-        soft: '0 12px 35px rgba(15, 23, 42, 0.08)',
+      fontFamily: {
+        display: ['Fraunces', 'Georgia', 'serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'Menlo', 'monospace'],
+      },
+      borderRadius: { card: '3px' },
+      keyframes: {
+        shimmer: { '0%': { backgroundPosition: '-400px 0' }, '100%': { backgroundPosition: '400px 0' } },
+        fade: { '0%': { opacity: 0, transform: 'translateY(4px)' }, '100%': { opacity: 1, transform: 'none' } },
+      },
+      animation: {
+        shimmer: 'shimmer 1.4s linear infinite',
+        fade: 'fade 180ms ease-out both',
       },
     },
   },
   plugins: [],
-}
+};

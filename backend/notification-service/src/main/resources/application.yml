@@ -1,0 +1,49 @@
+server:
+  port: ${PORT:8085}
+
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:3306/academiax_notification?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: false
+    show-sql: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    fetch-registry: true
+    registry-fetch-interval-seconds: 5
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${EUREKA_INSTANCE_INSTANCE_ID:${spring.application.name}@${server.port:8085}}
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId:-}]"

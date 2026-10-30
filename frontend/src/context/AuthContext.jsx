@@ -1,75 +1,62 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { authApi, tokens } from '../lib/api';
 
 const AuthContext = createContext(null);
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
-const authApi = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+function readUser() {
+  try { return tokens.access ? JSON.parse(localStorage.getItem('user')) : null; } catch { return null; }
+}
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem('academiax-user');
-    return stored ? JSON.parse(stored) : null;
-  });
-  const [token, setToken] = useState(() => localStorage.getItem('academiax-token') || '');
+  const [user, setUser] = useState(readUser);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (token) {
-      authApi.defaults.headers.common.Authorization = `Bearer ${token}`;
-    } else {
-      delete authApi.defaults.headers.common.Authorization;
-    }
-  }, [token]);
-
-  const login = async (email, password) => {
-    const response = await authApi.post('/auth/login', { email, password });
-    const payload = response.data;
-    const nextToken = payload.token || payload.accessToken;
-    const nextUser = payload.user || payload;
-
-    setToken(nextToken || '');
-    setUser(nextUser || null);
-
-    if (nextToken) localStorage.setItem('academiax-token', nextToken);
-    if (nextUser) localStorage.setItem('academiax-user', JSON.stringify(nextUser));
-
-    return payload;
-  };
-
-  const register = async (payload) => {
-    const response = await authApi.post('/auth/register', payload);
-    return response.data;
-  };
-
-  const logout = () => {
+  const clearSession = useCallback(() => {
+    tokens.clear();
     setUser(null);
-    setToken('');
-    localStorage.removeItem('academiax-token');
-    localStorage.removeItem('academiax-user');
-  };
+    queryClient.clear();
+  }, [queryClient]);
 
-  const value = useMemo(() => ({
-    user,
-    token,
-    isAuthenticated: Boolean(token && user),
-    login,
-    register,
-    logout,
-    api: authApi,
-  }), [user, token]);
+  // The API layer fires this when a refresh fails (token expired, revoked, or reused elsewhere).
+  useEffect(() => {
+    const onExpired = () => setUser(null);
+    window.addEventListener('auth:expired', onExpired);
+    return () => window.removeEventListener('auth:expired', onExpired);
+  }, []);
+
+  const login = useCallback(async credentials => {
+    const { data } = await authApi.login(credentials);
+    tokens.save(data);
+    const profile = { id: data.userId, name: data.name, email: data.email, role: data.role, department: data.department };
+    localStorage.setItem('user', JSON.stringify(profile));
+    setUser(profile);
+    return profile;
+  }, []);
+
+  const logout = useCallback(async () => {
+    try { await authApi.logout(); } catch { /* token may already be revoked */ }
+    clearSession();
+  }, [clearSession]);
+
+  const updateUser = useCallback(patch => {
+    setUser(current => {
+      const next = { ...current, ...patch };
+      localStorage.setItem('user', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const value = useMemo(() => ({ user, isAuthenticated: !!user, login, logout, clearSession, updateUser }),
+    [user, login, logout, clearSession, updateUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used inside AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
+  return ctx;
 }
+
+export const homeFor = role => ({ STUDENT: '/dashboard', INSTRUCTOR: '/instructor', ADMIN: '/admin' }[role] || '/');

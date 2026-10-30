@@ -1,5 +1,5 @@
 server:
-  port: 8083
+  port: ${PORT:8083}
 
 spring:
   application:
@@ -15,7 +15,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: true
+        format_sql: false
     show-sql: false
 
 resilience4j:
@@ -31,6 +31,16 @@ resilience4j:
         recordExceptions:
           - org.springframework.web.client.HttpServerErrorException
           - java.io.IOException
+          - feign.RetryableException
+        ignoreExceptions:
+          - com.academiax.enrollment.exception.CourseFullException
+          - com.academiax.enrollment.exception.DuplicateEnrollmentException
+          - com.academiax.enrollment.exception.DeadlinePassedException
+          - com.academiax.enrollment.exception.InvalidStateTransitionException
+          - com.academiax.enrollment.exception.ResourceNotFoundException
+          - com.academiax.enrollment.exception.ForbiddenException
+          - com.academiax.enrollment.exception.ConflictException
+          - java.lang.IllegalArgumentException
       paymentService:
         slidingWindowSize: 10
         minimumNumberOfCalls: 5
@@ -41,11 +51,21 @@ resilience4j:
         recordExceptions:
           - org.springframework.web.client.HttpServerErrorException
           - java.io.IOException
+          - feign.RetryableException
+        ignoreExceptions:
+          - com.academiax.enrollment.exception.ResourceNotFoundException
+          - com.academiax.enrollment.exception.ForbiddenException
+          - com.academiax.enrollment.exception.ConflictException
+          - java.lang.IllegalArgumentException
   retry:
     instances:
       courseService:
         maxAttempts: 3
         waitDuration: 1s
+        ignoreExceptions:
+          - com.academiax.enrollment.exception.CourseFullException
+          - com.academiax.enrollment.exception.DuplicateEnrollmentException
+          - com.academiax.enrollment.exception.DeadlinePassedException
       paymentService:
         maxAttempts: 3
         waitDuration: 1s
@@ -55,12 +75,40 @@ eureka:
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     fetch-registry: true
+    registry-fetch-interval-seconds: 5
     register-with-eureka: true
   instance:
     prefer-ip-address: true
+    instance-id: ${EUREKA_INSTANCE_INSTANCE_ID:${spring.application.name}@${server.port:8083}}
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers
 
 springdoc:
   api-docs:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId:-}]"
+
+# Fast failover for the "kill an instance" demo: short instance cache, and retry the next instance on connection failure only
+spring.cloud.loadbalancer:
+  cache:
+    ttl: 5s
+  retry:
+    enabled: true
+    retry-on-all-operations: true
+    max-retries-on-same-service-instance: 0
+    max-retries-on-next-service-instance: 2
+    retryable-exceptions:
+      - java.net.ConnectException
+      - java.net.NoRouteToHostException
+      - java.net.UnknownHostException

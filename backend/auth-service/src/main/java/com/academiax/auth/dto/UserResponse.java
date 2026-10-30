@@ -18,5 +18,9 @@ public class UserResponse {
     private String email;
     private UserRole role;
     private String department;
+    private Boolean active;
+    private Integer failedLoginAttempts;
+    private LocalDateTime lockoutUntil;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
