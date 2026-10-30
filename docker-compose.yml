@@ -40,6 +40,7 @@ services:
       retries: 10
 
   eureka-server:
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: eureka-server/Dockerfile
@@ -50,6 +51,7 @@ services:
       <<: *actuator-healthcheck
 
   auth-service:
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: auth-service/Dockerfile
@@ -67,6 +69,7 @@ services:
       <<: *actuator-healthcheck
 
   course-service-1:
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: course-service/Dockerfile
@@ -81,6 +84,7 @@ services:
       <<: *actuator-healthcheck
 
   course-service-2:
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: course-service/Dockerfile
@@ -100,6 +104,7 @@ services:
       <<: *actuator-healthcheck
 
   payment-service:
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: payment-service/Dockerfile
@@ -114,6 +119,7 @@ services:
       <<: *actuator-healthcheck
 
   notification-service:
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: notification-service/Dockerfile
@@ -128,6 +134,7 @@ services:
       <<: *actuator-healthcheck
 
   enrollment-service-1:
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: enrollment-service/Dockerfile
@@ -147,6 +154,7 @@ services:
       <<: *actuator-healthcheck
 
   enrollment-service-2:
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: enrollment-service/Dockerfile
@@ -165,6 +173,7 @@ services:
       <<: *actuator-healthcheck
 
   api-gateway:
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: api-gateway/Dockerfile
@@ -192,6 +201,7 @@ services:
       <<: *actuator-healthcheck
 
   frontend:
+    restart: unless-stopped
     build:
       context: ./frontend
       args:
